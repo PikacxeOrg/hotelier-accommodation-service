@@ -17,6 +17,9 @@ env:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/AccommodationService
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +43,8 @@ jobs:
         run: dotnet build --no-restore -c ${{ env.CONFIGURATION }}
 
       - name: Unit Tests
-        run: dotnet test --no-build -c ${{ env.CONFIGURATION }} --logger trx --collect:"XPlat Code Coverage"
+        working-directory: tests/AccommodationService.Tests
+        run: dotnet test -c ${{ env.CONFIGURATION }} --logger trx --collect:"XPlat Code Coverage"
 
   integration-tests:
     needs: build-test
@@ -62,34 +66,35 @@ jobs:
             nuget-${{ runner.os }}-
 
       - name: Restore
+        working-directory: src/AccommodationService
         run: dotnet restore --locked-mode
 
       - name: Build
+        working-directory: src/AccommodationService
         run: dotnet build --no-restore -c ${{ env.CONFIGURATION }}
 
       - name: Start infra via docker compose
         if: hashFiles('docker-compose.yml') != ''
         run: |
           docker compose up -d postgres mongodb rabbitmq
-          # Wait for services to be healthy (improved check)
           for service in postgres mongodb rabbitmq; do
-            timeout 60 bash -c "until docker compose ps $service | grep -E '(Up.*healthy|Up \\(healthy\\))'; do sleep 2; done" || \
             timeout 60 bash -c "until docker compose ps $service | grep 'Up'; do sleep 2; done"
           done
           docker compose ps
 
       - name: Run Integration Tests
         if: hashFiles('docker-compose.yml') != ''
-        run: dotnet test --no-build -c ${{ env.CONFIGURATION }} --logger trx
+        working-directory: tests/AccommodationService.Tests
+        run: dotnet test -c ${{ env.CONFIGURATION }} --logger trx
 
       - name: Tear down compose infra
         if: always() && hashFiles('docker-compose.yml') != ''
         run: docker compose down -v
 
   docker-build-push:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: [build-test, integration-tests]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -136,7 +141,3 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.DOCKERHUB_USER }}/${{ github.event.repository.name }}:${{ steps.ver.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
-            org.opencontainers.image.version=${{ steps.ver.outputs.version }}
-            org.opencontainers.image.revision=${{ github.sha }}
