@@ -7,6 +7,9 @@ using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,8 +29,12 @@ var rabbitPass = builder.Configuration["Rabbit:Password"] ?? "guest";
 // -------------------------------------------------------
 // Database (PostgreSQL + EF Core)
 // -------------------------------------------------------
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+dataSourceBuilder.EnableDynamicJson();
+var dataSource = dataSourceBuilder.Build();
+
 builder.Services.AddDbContext<AccommodationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(dataSource));
 
 // -------------------------------------------------------
 // Authentication (JWT Bearer — validates tokens issued by identity-service)
@@ -73,7 +80,12 @@ builder.Services.AddMassTransit(x =>
 // -------------------------------------------------------
 // API / Swagger
 // -------------------------------------------------------
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
