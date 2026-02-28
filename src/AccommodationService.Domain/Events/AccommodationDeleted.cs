@@ -1,8 +1,8 @@
-namespace AccommodationService.Domain;
+namespace Hotelier.Events;
 
 /// <summary>
 /// Published when an accommodation is deleted.
-/// Consumed by search-service, availability-service, etc.
+/// Consumed by search-service, availability-service, reservation-service.
 /// </summary>
 public record AccommodationDeleted
 {

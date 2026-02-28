@@ -1,8 +1,9 @@
 using System.Security.Claims;
 
 using AccommodationService.Api;
-using AccommodationService.Domain;
 using AccommodationService.Infrastructure;
+
+using Hotelier.Events;
 
 using FluentAssertions;
 

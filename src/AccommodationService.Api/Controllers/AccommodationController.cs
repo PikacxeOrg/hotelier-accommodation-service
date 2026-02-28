@@ -3,6 +3,8 @@ using System.Security.Claims;
 using AccommodationService.Domain;
 using AccommodationService.Infrastructure;
 
+using Hotelier.Events;
+
 using MassTransit;
 
 using Microsoft.AspNetCore.Authorization;
@@ -52,12 +54,14 @@ public class AccommodationController(
         await publisher.Publish(new AccommodationCreated
         {
             AccommodationId = accommodation.Id,
+            HostId = accommodation.HostId,
             Name = accommodation.Name,
             Location = accommodation.Location,
             Amenities = accommodation.Amenities,
+            Pictures = accommodation.Pictures,
             MinGuests = accommodation.MinGuests,
             MaxGuests = accommodation.MaxGuests,
-            HostId = accommodation.HostId
+            AutoApproval = accommodation.AutoApproval
         });
 
         logger.LogInformation("Accommodation {Id} created by Host {HostId}", accommodation.Id, hostId);
@@ -175,11 +179,14 @@ public class AccommodationController(
         await publisher.Publish(new AccommodationUpdated
         {
             AccommodationId = accommodation.Id,
+            HostId = accommodation.HostId,
             Name = accommodation.Name,
             Location = accommodation.Location,
             Amenities = accommodation.Amenities,
+            Pictures = accommodation.Pictures,
             MinGuests = accommodation.MinGuests,
-            MaxGuests = accommodation.MaxGuests
+            MaxGuests = accommodation.MaxGuests,
+            AutoApproval = accommodation.AutoApproval
         });
 
         logger.LogInformation("Accommodation {Id} updated by Host {HostId}", id, hostId);
