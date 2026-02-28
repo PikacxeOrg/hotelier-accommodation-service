@@ -1,4 +1,4 @@
-using AccommodationService.Data;
+using AccommodationService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
