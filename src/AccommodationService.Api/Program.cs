@@ -105,7 +105,8 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
-        .AddSource("MassTransit"));
+        .AddSource("MassTransit")
+        .AddOtlpExporter());
 
 // -------------------------------------------------------
 // Build the app
