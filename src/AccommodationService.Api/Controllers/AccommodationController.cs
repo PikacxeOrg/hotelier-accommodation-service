@@ -164,6 +164,13 @@ public class AccommodationController(
         if (request.Name is not null) accommodation.Name = request.Name;
         if (request.Location is not null) accommodation.Location = request.Location;
         if (request.Amenities is not null) accommodation.Amenities = request.Amenities;
+        if (request.Pictures is not null)
+        {
+            if (accommodation.Pictures is null)
+                accommodation.Pictures = request.Pictures;
+            else
+                accommodation.Pictures = request.Pictures.Union(accommodation.Pictures).ToList();
+        }
         if (request.MinGuests.HasValue) accommodation.MinGuests = request.MinGuests.Value;
         if (request.MaxGuests.HasValue) accommodation.MaxGuests = request.MaxGuests.Value;
         if (request.AutoApproval.HasValue) accommodation.AutoApproval = request.AutoApproval.Value;

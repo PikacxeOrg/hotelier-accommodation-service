@@ -352,6 +352,91 @@ public class AccommodationControllerTests : IDisposable
         _db.Accommodations.Find(accommodation.Id)!.ModifiedBy.Should().Be(_hostId.ToString());
     }
 
+    // -- Update pictures -----------------------------------------
+
+    [Fact]
+    public async Task Update_WithNewPictures_AddsPicturesToExistingList()
+    {
+        var accommodation = DbContextFactory.SeedAccommodation(_db, _hostId);
+        accommodation.Pictures = ["http://cdn/existing.jpg"];
+        _db.SaveChanges();
+
+        await _sut.Update(accommodation.Id, new UpdateAccommodationRequest
+        {
+            Pictures = ["http://cdn/new1.jpg", "http://cdn/new2.jpg"]
+        });
+
+        var saved = _db.Accommodations.Find(accommodation.Id)!;
+        saved.Pictures.Should().HaveCount(3);
+        saved.Pictures.Should().Contain("http://cdn/existing.jpg");
+        saved.Pictures.Should().Contain("http://cdn/new1.jpg");
+        saved.Pictures.Should().Contain("http://cdn/new2.jpg");
+    }
+
+    [Fact]
+    public async Task Update_WithPictures_DeduplicatesExistingUrls()
+    {
+        var accommodation = DbContextFactory.SeedAccommodation(_db, _hostId);
+        accommodation.Pictures = ["http://cdn/existing.jpg"];
+        _db.SaveChanges();
+
+        await _sut.Update(accommodation.Id, new UpdateAccommodationRequest
+        {
+            Pictures = ["http://cdn/existing.jpg", "http://cdn/new.jpg"]
+        });
+
+        var saved = _db.Accommodations.Find(accommodation.Id)!;
+        saved.Pictures.Should().HaveCount(2);
+        saved.Pictures.Should().ContainSingle(p => p == "http://cdn/existing.jpg");
+    }
+
+    [Fact]
+    public async Task Update_WithPictures_WhenListWasEmpty_SetsListDirectly()
+    {
+        var accommodation = DbContextFactory.SeedAccommodation(_db, _hostId);
+        // SeedAccommodation sets Pictures = [] already
+
+        await _sut.Update(accommodation.Id, new UpdateAccommodationRequest
+        {
+            Pictures = ["http://cdn/first.jpg"]
+        });
+
+        var saved = _db.Accommodations.Find(accommodation.Id)!;
+        saved.Pictures.Should().ContainSingle().Which.Should().Be("http://cdn/first.jpg");
+    }
+
+    [Fact]
+    public async Task Update_WithNullPictures_DoesNotChangePictures()
+    {
+        var accommodation = DbContextFactory.SeedAccommodation(_db, _hostId);
+        accommodation.Pictures = ["http://cdn/original.jpg"];
+        _db.SaveChanges();
+
+        await _sut.Update(accommodation.Id, new UpdateAccommodationRequest
+        {
+            Name = "Updated Name",
+            Pictures = null
+        });
+
+        var saved = _db.Accommodations.Find(accommodation.Id)!;
+        saved.Pictures.Should().ContainSingle().Which.Should().Be("http://cdn/original.jpg");
+    }
+
+    [Fact]
+    public async Task Update_Pictures_IncludedInResponse()
+    {
+        var accommodation = DbContextFactory.SeedAccommodation(_db, _hostId);
+
+        var result = await _sut.Update(accommodation.Id, new UpdateAccommodationRequest
+        {
+            Pictures = ["http://cdn/photo.jpg"]
+        });
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = ok.Value.Should().BeOfType<AccommodationResponse>().Subject;
+        response.Pictures.Should().ContainSingle().Which.Should().Be("http://cdn/photo.jpg");
+    }
+
     // -- Delete --------------------------------------------------
 
     [Fact]

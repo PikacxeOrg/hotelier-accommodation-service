@@ -11,6 +11,7 @@ public class UpdateAccommodationRequest
     public string? Location { get; set; }
 
     public List<string>? Amenities { get; set; }
+    public List<string>? Pictures { get; set; }
 
     [Range(1, 100)]
     public int? MinGuests { get; set; }
